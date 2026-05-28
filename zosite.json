@@ -1,0 +1,15 @@
+{
+  "name": "mmj-breeders-catalog",
+  "local_port": 56127,
+  "entrypoint": "bun run dev",
+  "publish": {
+    "label": "mmj-breeders-catalog",
+    "type": "http",
+    "entrypoint": "bun run prod",
+    "published_port": 51178,
+    "env": {
+      "NODE_ENV": "production",
+      "ZO_CLIENT_IDENTITY_TOKEN": "none"
+    }
+  }
+}
