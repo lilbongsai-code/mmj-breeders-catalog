@@ -22,10 +22,16 @@ export default function StrainDetail() {
     );
   }
 
-  // Find parent strains for pedigree
-  const parentStrains = strain.lineage?.map(parentName => 
-    strains.find(s => s.name.toLowerCase() === parentName?.toLowerCase())
-  ).filter(Boolean) || [];
+  // Find parent strains for pedigree — handles lineage entries that may be numeric IDs OR names
+  const parentStrains = (strain.lineage || []).map((ref) => {
+    const refStr = String(ref).trim();
+    if (!refStr) return null;
+    // Try lookup by id (as string) first, then by name (case-insensitive)
+    const byId = strains.find(s => String(s.id) === refStr);
+    if (byId) return byId;
+    const byName = strains.find(s => s.name?.toLowerCase() === refStr.toLowerCase());
+    return byName || null;
+  });
 
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #0a1a0f 0%, #0f2818 50%, #0a1a0f 100%)" }}>
