@@ -1,6 +1,19 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Leaf, ArrowLeft, Dna, Flame, Sparkles, Heart, Activity, Droplet } from "lucide-react";
+import { useState } from "react";
+import { Leaf, ArrowLeft, Dna, Flame, Sparkles, Heart, Activity, Droplet, X, Send, Github, Edit2 } from "lucide-react";
 import strains from "@/data/strains.json";
+
+const SUGGESTIONS_KEY = "mmj-strain-edit-suggestions";
+
+type StrainEditSuggestion = {
+  id: string;
+  strainSlug: string;
+  strainName: string;
+  diff: Record<string, { from: any; to: any }>;
+  submitterName: string;
+  notes?: string;
+  timestamp: number;
+};
 
 export default function StrainDetail() {
   const { slug } = useParams();
@@ -8,6 +21,11 @@ export default function StrainDetail() {
   
   const strain = strains.find(s => s.slug === slug);
   
+  // Edit suggestion state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [submitterName, setSubmitterName] = useState("");
+  const [notes, setNotes] = useState("");
+
   if (!strain) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a1a0f]">
@@ -34,13 +52,20 @@ export default function StrainDetail() {
   });
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #0a1a0f 0%, #0f2818 50%, #0a1a0f 100%)" }}>
+    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, #0a1a0f 0%, #0f2818 50%, #0a1a0f 100%" }}>
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0a1a0f]/80 border-b border-emerald-900/30">
-        <div className="max-w-5xl mx-auto px-4 py-4">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
           <button onClick={() => navigate('/strains')} className="flex items-center gap-2 text-emerald-400 hover:text-amber-400 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span>Back to Catalog</span>
+          </button>
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400/50 transition-all text-sm font-medium"
+          >
+            <Edit2 className="w-4 h-4" />
+            <span>Suggest Edit</span>
           </button>
         </div>
       </header>
@@ -81,23 +106,17 @@ export default function StrainDetail() {
               <h2 className="text-xl font-bold text-amber-300">Genetic Lineage</h2>
             </div>
             
-            <div className="flex items-center justify-center gap-4 py-6">
+            <div className="flex items-center justify-center gap-4 py-6 flex-wrap">
               {parentStrains.map((parent, idx) => (
                 <div key={idx} className="flex items-center gap-4">
                   {idx > 0 && <span className="text-3xl text-amber-500/60">×</span>}
-                  <button
-                    onClick={() => parent && navigate(`/strain/${parent.slug}`)}
-                    className={`p-4 rounded-xl border text-center transition-all ${
-                      parent 
-                        ? "bg-emerald-950/50 border-emerald-700/40 hover:border-amber-500/50 cursor-pointer"
-                        : "bg-emerald-950/30 border-emerald-800/20 cursor-default"
-                    }`}
-                  >
-                    <Leaf className="w-8 h-8 text-emerald-400/60 mx-auto mb-2" />
-                    <span className="text-emerald-100 font-medium">
-                      {strain.lineage[idx]}
-                    </span>
-                    {parent && (
+                  {parent ? (
+                    <button
+                      onClick={() => navigate(`/strain/${parent.slug}`)}
+                      className="p-4 rounded-xl bg-emerald-950/50 border border-emerald-700/40 hover:border-amber-500/50 cursor-pointer text-center transition-all"
+                    >
+                      <Leaf className="w-8 h-8 text-emerald-400/60 mx-auto mb-2" />
+                      <span className="text-emerald-100 font-medium">{strain.lineage[idx]}</span>
                       <span className={`block text-xs mt-1 ${
                         parent.type === "Indica" ? "text-purple-400" :
                         parent.type === "Sativa" ? "text-orange-400" :
@@ -105,8 +124,14 @@ export default function StrainDetail() {
                       }`}>
                         {parent.type}
                       </span>
-                    )}
-                  </button>
+                    </button>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/20 text-center">
+                      <Leaf className="w-8 h-8 text-emerald-400/30 mx-auto mb-2" />
+                      <span className="text-emerald-300/60 font-medium">{strain.lineage[idx]}</span>
+                      <span className="block text-xs mt-1 text-emerald-500/40">unverified parent</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -128,7 +153,6 @@ export default function StrainDetail() {
 
         {/* Effects & Flavors */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Effects */}
           {strain.effects?.length > 0 && (
             <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-[#0f2818]/60 border border-emerald-800/20">
               <div className="flex items-center gap-3 mb-4">
@@ -145,7 +169,6 @@ export default function StrainDetail() {
             </div>
           )}
           
-          {/* Flavors */}
           {strain.flavors?.length > 0 && (
             <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-[#0f2818]/60 border border-emerald-800/20">
               <div className="flex items-center gap-3 mb-4">
@@ -162,7 +185,6 @@ export default function StrainDetail() {
             </div>
           )}
           
-          {/* Terpenes */}
           {strain.terpenes?.length > 0 && (
             <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-[#0f2818]/60 border border-emerald-800/20">
               <div className="flex items-center gap-3 mb-4">
@@ -179,7 +201,6 @@ export default function StrainDetail() {
             </div>
           )}
           
-          {/* Ailments */}
           {strain.ailments?.length > 0 && (
             <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-[#0f2818]/60 border border-emerald-800/20">
               <div className="flex items-center gap-3 mb-4">
@@ -216,7 +237,206 @@ export default function StrainDetail() {
             </div>
           </div>
         </div>
+
+        {/* Open Source Footer */}
+        <div className="mt-8 p-6 rounded-2xl bg-gradient-to-br from-amber-950/20 to-emerald-950/20 border border-amber-800/20 text-center">
+          <h3 className="text-lg font-bold text-amber-300 mb-2">Help grow the catalog 🌱</h3>
+          <p className="text-emerald-300/70 text-sm mb-4">
+            This is a community-driven, open-source genetics database. Breeder, peer, or patient — if you have intel to share, every contribution counts.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200 hover:bg-amber-500/30 text-sm font-medium"
+            >
+              <Edit2 className="w-4 h-4" /> Suggest an Edit
+            </button>
+            <a
+              href="https://github.com/zosomaster/mmj-breeders-catalog"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700/30 border border-emerald-600/40 text-emerald-200 hover:bg-emerald-700/40 text-sm font-medium"
+            >
+              <Github className="w-4 h-4" /> View on GitHub
+            </a>
+          </div>
+        </div>
       </main>
+
+      {/* Suggest Edit Modal */}
+      {showEditModal && (
+        <SuggestEditModal
+          strain={strain}
+          onClose={() => setShowEditModal(false)}
+          submitterName={submitterName}
+          setSubmitterName={setSubmitterName}
+          notes={notes}
+          setNotes={setNotes}
+        />
+      )}
+    </div>
+  );
+}
+
+function SuggestEditModal({ strain, onClose, submitterName, setSubmitterName, notes, setNotes }: any) {
+  const [type, setType] = useState(strain.type || "Hybrid");
+  const [thc, setThc] = useState(strain.thc || "0");
+  const [cbd, setCbd] = useState(strain.cbd || "0");
+  const [lineage, setLineage] = useState((strain.lineage || []).join(", "));
+  const [effects, setEffects] = useState((strain.effects || []).join(", "));
+  const [flavors, setFlavors] = useState((strain.flavors || []).join(", "));
+  const [terpenes, setTerpenes] = useState((strain.terpenes || []).join(", "));
+  const [ailments, setAilments] = useState((strain.ailments || []).join(", "));
+  const [description, setDescription] = useState(strain.description || "");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!submitterName.trim()) {
+      alert("Please enter your name so we can credit the contribution");
+      return;
+    }
+    const suggestion: StrainEditSuggestion = {
+      id: `sug-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      strainSlug: strain.slug,
+      strainName: strain.name,
+      submitterName: submitterName.trim(),
+      notes: notes.trim() || undefined,
+      timestamp: Date.now(),
+      diff: {
+        type: { from: strain.type, to: type },
+        thc: { from: strain.thc, to: thc },
+        cbd: { from: strain.cbd, to: cbd },
+        lineage: { from: strain.lineage, to: lineage.split(",").map((s: string) => s.trim()).filter(Boolean) },
+        effects: { from: strain.effects, to: effects.split(",").map((s: string) => s.trim()).filter(Boolean) },
+        flavors: { from: strain.flavors, to: flavors.split(",").map((s: string) => s.trim()).filter(Boolean) },
+        terpenes: { from: strain.terpenes, to: terpenes.split(",").map((s: string) => s.trim()).filter(Boolean) },
+        ailments: { from: strain.ailments, to: ailments.split(",").map((s: string) => s.trim()).filter(Boolean) },
+        description: { from: strain.description, to: description },
+      },
+    };
+    try {
+      const existing: StrainEditSuggestion[] = JSON.parse(localStorage.getItem(SUGGESTIONS_KEY) || "[]");
+      existing.push(suggestion);
+      localStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(existing));
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Failed to save suggestion", err);
+      alert("Failed to save suggestion locally. Please file a GitHub issue instead.");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-gradient-to-br from-[#0f2818] to-[#0a1a0f] border border-emerald-800/40 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 z-10 backdrop-blur-xl bg-[#0a1a0f]/90 border-b border-emerald-900/40 p-6 flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-amber-300 flex items-center gap-2">
+              <Edit2 className="w-5 h-5" /> Suggest an Edit
+            </h2>
+            <p className="text-sm text-emerald-400/70 mt-1">
+              Help improve <span className="font-semibold text-emerald-200">{strain.name}</span> — your contribution is reviewed and credited.
+            </p>
+          </div>
+          <button onClick={onClose} className="text-emerald-400 hover:text-amber-400 p-1">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {submitted ? (
+          <div className="p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto mb-4">
+              <Send className="w-8 h-8 text-emerald-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-emerald-100 mb-2">Suggestion saved locally!</h3>
+            <p className="text-emerald-300/80 mb-6">Thanks for contributing to the open-source catalog. You can also file your edit directly on GitHub for faster review.</p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <a
+                href={`https://github.com/zosomaster/mmj-breeders-catalog/issues/new?title=Suggest%20edit%20to%20${encodeURIComponent(strain.name)}&body=${encodeURIComponent(notes || "Suggesting edits per the in-app form.")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
+              >
+                <Github className="w-4 h-4" /> File on GitHub
+              </a>
+              <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-emerald-700/40 text-emerald-200 hover:bg-emerald-900/30">
+                Close
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-emerald-300/80 mb-1">Type</label>
+                <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm">
+                  <option>Indica</option>
+                  <option>Sativa</option>
+                  <option>Hybrid</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-emerald-300/80 mb-1">THC %</label>
+                <input type="text" value={thc} onChange={(e) => setThc(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-emerald-300/80 mb-1">CBD %</label>
+                <input type="text" value={cbd} onChange={(e) => setCbd(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-emerald-300/80 mb-1">Lineage (comma-separated parent names or IDs)</label>
+              <input type="text" value={lineage} onChange={(e) => setLineage(e.target.value)} placeholder="e.g. OG Kush, Sour Diesel" className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-emerald-300/80 mb-1">Effects (comma-separated)</label>
+              <input type="text" value={effects} onChange={(e) => setEffects(e.target.value)} placeholder="e.g. Relaxed, Happy, Euphoric" className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-emerald-300/80 mb-1">Flavors</label>
+                <input type="text" value={flavors} onChange={(e) => setFlavors(e.target.value)} placeholder="e.g. Citrus, Pine" className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-emerald-300/80 mb-1">Terpenes</label>
+                <input type="text" value={terpenes} onChange={(e) => setTerpenes(e.target.value)} placeholder="e.g. Myrcene, Limonene" className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-emerald-300/80 mb-1">May help with (comma-separated)</label>
+              <input type="text" value={ailments} onChange={(e) => setAilments(e.target.value)} placeholder="e.g. Insomnia, Pain" className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-emerald-300/80 mb-1">Description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+            </div>
+
+            <div className="pt-2 border-t border-emerald-900/40">
+              <label className="block text-xs font-medium text-emerald-300/80 mb-1">Your name / handle (for credit) *</label>
+              <input type="text" required value={submitterName} onChange={(e) => setSubmitterName(e.target.value)} placeholder="@yourhandle" className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-emerald-300/80 mb-1">Notes (optional — sources, links, reasoning)</label>
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-800/40 text-emerald-100 text-sm" />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button type="submit" className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold">
+                <Send className="w-4 h-4" /> Submit Suggestion
+              </button>
+              <button type="button" onClick={onClose} className="px-5 py-3 rounded-xl border border-emerald-700/40 text-emerald-200 hover:bg-emerald-900/30">
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
