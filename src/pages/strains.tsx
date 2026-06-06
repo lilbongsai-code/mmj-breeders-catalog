@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Filter, Leaf, Flame, Sparkles, ChevronRight, Dna } from "lucide-react";
 import strains from "@/data/strains.json";
@@ -10,6 +10,9 @@ export default function StrainCatalog() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [breederFilter, setBreederFilter] = useState("all");
+  const [loadMoreCount, setLoadMoreCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(100);
 
   const filteredStrains = useMemo(() => {
     return strains.filter(s => {
@@ -20,6 +23,11 @@ export default function StrainCatalog() {
       const matchesBreeder = breederFilter === "all" || s.breeder === breederFilter;
       return matchesSearch && matchesType && matchesBreeder;
     });
+  }, [search, typeFilter, breederFilter]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setPageSize(100);
   }, [search, typeFilter, breederFilter]);
 
   const strainTypes = ["Indica", "Sativa", "Hybrid"];
@@ -72,7 +80,7 @@ export default function StrainCatalog() {
               className="px-4 py-2 rounded-lg bg-emerald-950/50 border border-emerald-800/30 text-emerald-100"
             >
               <option value="all">All Breeders ({uniqueBreeders.length})</option>
-              {uniqueBreeders.slice(0, 100).map(b => <option key={b} value={b}>{b}</option>)}
+              {uniqueBreeders.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
         </div>
@@ -81,7 +89,7 @@ export default function StrainCatalog() {
       {/* Strain Grid */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredStrains.slice(0, 100).map((strain) => (
+          {filteredStrains.slice(0, pageSize).map((strain) => (
             <button
               key={strain.id}
               onClick={() => navigate(`/strain/${strain.slug}`)}
@@ -132,9 +140,17 @@ export default function StrainCatalog() {
             </button>
           ))}
         </div>
-        {filteredStrains.length > 100 && (
-          <div className="text-center mt-8 text-emerald-400/60">
-            Showing 100 of {filteredStrains.length.toLocaleString()} strains. Use search to find more.
+        {filteredStrains.length > pageSize && (
+          <div className="text-center mt-8 space-y-3">
+            <p className="text-emerald-400/60 text-sm">
+              Showing {pageSize.toLocaleString()} of {filteredStrains.length.toLocaleString()} strains.
+            </p>
+            <button
+              onClick={() => setPageSize(pageSize + 100)}
+              className="px-4 py-2 rounded-lg bg-emerald-950/50 border border-emerald-800/30 text-emerald-100 hover:bg-emerald-900/50"
+            >
+              Load 100 More
+            </button>
           </div>
         )}
       </main>
